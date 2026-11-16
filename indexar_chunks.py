@@ -49,6 +49,7 @@ def buscar(pregunta, k=3):
 
 
 def main():
+    print("Descargando los chunks")
     chunks = cargar_chunks()
     if coleccion.count() < len(chunks):
         crear_indice(chunks)
@@ -56,6 +57,7 @@ def main():
         print("Índice ya creado, se omite la indexación.")
     print(f"Chunks: {len(chunks)} | Indexados: {coleccion.count()}")
 
+    print("Realizar preguntas")
     for pregunta in ["¿Cómo funciona un decorador en Python?"]:
         print(f"\nPregunta: {pregunta}")
         for texto, meta in buscar(pregunta):
