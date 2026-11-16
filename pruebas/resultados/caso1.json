@@ -1,0 +1,58 @@
+{
+  "id": 1,
+  "tipo": "habitual",
+  "modo": "gemini",
+  "pregunta": "¿Qué diferencia hay entre una lista y una tupla?",
+  "status": 200,
+  "respuesta_api": {
+    "respuesta": "Basándome en los fragmentos proporcionados, las principales diferencias entre una lista y una tupla son las siguientes:\n\n* **Mutabilidad:** Las listas son estructuras de datos que pueden cambiar con el tiempo y admiten operaciones de modificación en el mismo lugar (*in-place*) [1][3]. En cambio, las tuplas son inmutables; no se pueden modificar ni cambiar de tamaño sin crear una copia [1][3][4][5].\n* **Sintaxis:** Para definir una tupla se utilizan paréntesis `()`, mientras que para las listas se emplean corchetes `[]` [4].\n* **Integridad y garantías:** La inmutabilidad de las tuplas proporciona integridad al código, ya que garantiza que su valor no cambiará a través de otra referencia en el programa, algo que no ocurre con las listas [3]. Por ello, las tuplas funcionan de forma similar a la declaración de \"constantes\" [3].\n* **Uso como claves de diccionarios:** Debido a su inmutabilidad, las tuplas pueden utilizarse en lugares donde las listas no están permitidas, como por ejemplo siendo claves de un diccionario (*dictionary keys*) [3].\n* **Concepción original:** El creador de Python concebía la tupla como una simple asociación de objetos, y la lista como una estructura de datos destinada a cambiar con el tiempo [3].",
+    "fuentes": [
+      {
+        "texto": "they maintain a left-to-right order among their contents); like lists, they can embed\nany kind of object.\nAccessed by offset\nLike strings and lists, items in a tuple are accessed by offset (not by key); they\nsupport all the offset-based access operations, such as indexing and slicing.\nOf the category “immutable sequence”\nLike strings and lists, tuples are sequences; they support many of the same operations. However, like strings, tuples are immutable; they don’t support any of the\nin-place change operations applied to lists.\nFixed-length, heterogeneous, and arbitrarily nestable\nBecause tuples are immutable, you cannot change the size of a tuple without making a copy. On the other hand, tuples can hold any type of object, including other\ncompound objects (e.g., lists, dictionaries, other tuples), and so support arbitrary\nnesting.\nArrays of object references\nLike lists, tuples are best thought of as object reference arrays; tuples store access",
+        "metadata": {
+          "page": 328,
+          "source": "Learning Python, 5th Edition (Mark Lutz) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "chunk_number": 2
+        },
+        "similitud": 0.8299
+      },
+      {
+        "texto": "Here, the list and tuple built-in functions are used to convert the object to a list and\nthen back to a tuple; really, both calls make new objects, but the net effect is like a\nconversion.\nList comprehensions can also be used to convert tuples. The following, for example,\nmakes a list from a tuple, adding 20 to each item along the way:\n>>> T = (1, 2, 3, 4, 5)\n>>> L = [x + 20 for x in T]\n>>> L\n[21, 22, 23, 24, 25]\nList comprehensions are really sequence operations—they always build new lists, but\nthey may be used to iterate over any sequence objects, including tuples, strings, and\nother lists. As we’ll see later in the book, they even work on some things that are not\nphysically stored sequences—any iterable objects will do, including files, which are\nautomatically read line by line. Given this, they may be better called iteration tools.\nAlthough tuples don’t have the same methods as lists and strings, they do have two of",
+        "metadata": {
+          "page": 331,
+          "chunk_number": 1,
+          "source": "Learning Python, 5th Edition (Mark Lutz) (z-library.sk, 1lib.sk, z-lib.sk).pdf"
+        },
+        "similitud": 0.8225
+      },
+      {
+        "texto": "Python’s creator is a mathematician by training, and he has been quoted as seeing a\ntuple as a simple association of objects and a list as a data structure that changes over\ntime. In fact, this use of the word “tuple” derives from mathematics, as does its frequent\nuse for a row in a relational database table.\nThe best answer, however, seems to be that the immutability of tuples provides some\nintegrity—you can be sure a tuple won’t be changed through another reference elsewhere in a program, but there’s no such guarantee for lists. Tuples and other immutables, therefore, serve a similar role to “constant” declarations in other languages,\nthough the notion of constantness is associated with objects in Python, not variables.\nTuples can also be used in places that lists cannot—for example, as dictionary keys\n(see the sparse matrix example in Chapter 8). Some built-in operations may also require",
+        "metadata": {
+          "chunk_number": 1,
+          "page": 332,
+          "source": "Learning Python, 5th Edition (Mark Lutz) (z-library.sk, 1lib.sk, z-lib.sk).pdf"
+        },
+        "similitud": 0.8218
+      },
+      {
+        "texto": "game. However, sometimes you’ll want to create a list of items that cannot\nchange. Tuples allow you to do just that. Python refers to values that cannot\nchange as immutable, and an immutable list is called a tuple.\nDefining a Tuple\nA tuple looks just like a list except you use parentheses instead of square\nbrackets. Once you define a tuple, you can access individual elements by\nusing each item’s index, just as you would for a list.",
+        "metadata": {
+          "chunk_number": 3,
+          "source": "Python Crash Course A Hands-On, Project-Based Introduction to Programming (Eric Matthes) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "page": 102
+        },
+        "similitud": 0.8208
+      },
+      {
+        "texto": "A major rule of thumb in Python is to code for simplicity and readability first and worry\nabout performance later, after your program is working, and after you’ve proved that\nthere is a genuine performance concern. More often than not, your code will be quick\nenough as it is. If you do need to tweak code for performance, though, Python includes\ntools to help you out, including the time and timeit modules for timing the speed of\nalternatives, and the profile module for isolating bottlenecks.\nYou’ll find more on these later in this book (see especially Chapter 21’s benchmarking\ncase study) and in the Python manuals. For the sake of this preview, let’s move ahead\nto the next core data type.\nTuples\nThe tuple object (pronounced “toople” or “tuhple,” depending on whom you ask) is\nroughly like a list that cannot be changed—tuples are sequences, like lists, but they are\nimmutable, like strings. Functionally, they’re used to represent fixed collections of",
+        "metadata": {
+          "source": "Learning Python, 5th Edition (Mark Lutz) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "page": 173,
+          "chunk_number": 1
+        },
+        "similitud": 0.8199
+      }
+    ],
+    "modelo": "gemini-3.5-flash"
+  }
+}

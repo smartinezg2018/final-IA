@@ -1,0 +1,58 @@
+{
+  "id": 3,
+  "tipo": "habitual",
+  "modo": "gemini",
+  "pregunta": "¿Cómo manejo excepciones con try y except?",
+  "status": 200,
+  "respuesta_api": {
+    "respuesta": "Para manejar excepciones en Python se utiliza la estructura `try` y `except` [1][2]:\n\n### 1. Estructura y flujo de control\n* **Bloque `try`:** Se coloca el código que se desea ejecutar y que potencialmente podría lanzar una excepción [1][3]. Las declaraciones en el bloque `try` también pueden invocar funciones externas donde se originen las excepciones [3].\n* **Cláusula `except`:** Captura y maneja las excepciones coincidentes que ocurren mientras se ejecuta el bloque `try` [3]. \n  * Se pueden especificar excepciones particulares (como `NameError` o `IndexError`) [2].\n  * Una cláusula `except` vacía (sin nombre de excepción) captura todas (o todas las demás) excepciones [2][3].\n* **Cláusula `else` (opcional):** Si está presente, sus instrucciones se ejecutan únicamente si no ocurrió ninguna excepción durante la ejecución del bloque `try` [1][3].\n\n**Ejemplo de sintaxis básica:** [1][2]\n```python\ntry:\n    action()\nexcept NameError:\n    ... # Manejar NameError\nexcept IndexError:\n    ... # Manejar IndexError\nexcept:\n    ... # Manejar todas las demás excepciones\nelse:\n    ... # Se ejecuta solo si no ocurrió ninguna excepción\n```\n\n---\n\n### 2. Buenas prácticas en el uso de `try` y `except`\n* **Uso del `else` explícito:** Es mejor usar la cláusula `else` que colocar el código de \"no ocurrió excepción\" dentro del propio bloque `try`. Si ese código secundario genera un error por accidente, podría activar erróneamente el bloque `except` situado debajo [1].\n* **Especificidad en los manejadores:** Como regla general, se recomienda ser tan específico como sea posible en los manejadores (por ejemplo, usar `except KeyError:`) [4]. Los manejadores generales o `except` vacíos pueden ser convenientes en scripts simples, pero tienden a ser problemáticos [4].\n* **Equilibrio de granularidad:** Se debe procurar no ser ni demasiado general ni demasiado específico al definir los manejadores de excepciones [5].",
+    "fuentes": [
+      {
+        "texto": "try:\n    ...run code...\nexcept IndexError:\n    ...handle exception...\nelse:\n    ...no exception occurred...\nYou can almost emulate an else clause by moving its code into the try block:\ntry:\n    ...run code...\n    ...no exception occurred...\nexcept IndexError:\n    ...handle exception...\nThis can lead to incorrect exception classifications, though. If the “no exception occurred” action triggers an IndexError, it will register as a failure of the try block and\nerroneously trigger the exception handler below the try (subtle, but true!). By using an\nexplicit else clause instead, you make the logic more obvious and guarantee that\nexcept handlers will run only for real failures in the code you’re wrapping in a try, not\nfor failures in the else no-exception case’s action.\nExample: Default Behavior\nBecause the control flow through a program is easier to capture in Python than in\nEnglish, let’s run some examples that further illustrate exception basics in the context",
+        "metadata": {
+          "chunk_number": 2,
+          "source": "Learning Python, 5th Edition (Mark Lutz) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "page": 1150
+        },
+        "similitud": 0.8602
+      },
+      {
+        "texto": "try:\n    action()\nexcept NameError:\n    ...                   # Handle NameError\nexcept IndexError:\n    ...                   # Handle IndexError\nexcept:\n    ...                   # Handle all other exceptions\n1096 | Chapter 34: Exception Coding Details",
+        "metadata": {
+          "page": 1148,
+          "source": "Learning Python, 5th Edition (Mark Lutz) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "chunk_number": 3
+        },
+        "similitud": 0.8572
+      },
+      {
+        "texto": "• If an exception does not occur while the try block’s statements are running, Python\nruns the statements under the else line (if present), and control then resumes below\nthe entire try statement.\nIn other words, except clauses catch any matching exceptions that happen while the\ntry block is running, and the else clause runs only if no exceptions happen while the\ntry block runs. Exceptions raised are matched to exceptions named in except clauses\nby superclass relationships we’ll explore in the next chapter, and the empty except clause\n(with no exception name) matches all (or all other) exceptions.\nThe except clauses are focused exception handlers—they catch exceptions that occur\nonly within the statements in the associated try block. However, as the try block’s\nstatements can call functions coded elsewhere in a program, the source of an exception\nmay be outside the try statement itself.\nIn fact, a try block might invoke arbitrarily large amounts of program code—including",
+        "metadata": {
+          "chunk_number": 1,
+          "page": 1147,
+          "source": "Learning Python, 5th Edition (Mark Lutz) (z-library.sk, 1lib.sk, z-lib.sk).pdf"
+        },
+        "similitud": 0.8538
+      },
+      {
+        "texto": "As a rule of thumb, be as specific in your handlers as you can be—empty except clauses\nand Exception catchers are handy, but potentially error-prone. In the last example, for\ninstance, you would be better off saying except KeyError: to make your intentions\nexplicit and avoid intercepting unrelated events. In simpler scripts, the potential for\nproblems might not be significant enough to outweigh the convenience of a catchall,\nbut in general, general handlers are generally trouble.\nCatching Too Little: Use Class-Based Categories\nOn the other hand, neither should handlers be too specific. When you list specific\nexceptions in a try, you catch only what you actually list. This isn’t necessarily a bad\nthing, but if a system evolves to raise other exceptions in the future, you may need to\ngo back and add them to exception lists elsewhere in your code.\nWe saw this phenomenon at work in the prior chapter. For instance, the following",
+        "metadata": {
+          "chunk_number": 1,
+          "source": "Learning Python, 5th Edition (Mark Lutz) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "page": 1207
+        },
+        "similitud": 0.8533
+      },
+      {
+        "texto": "try:\n    ...\nexcept SuccessCategoryName:      # OK if you add a MyExcept3 subclass later\n    ...                          # Nonerrors\nelse:\n    ...                          # Assumed to be an error\nIn other words, a little design goes a long way. The moral of the story is to be careful\nto be neither too general nor too specific in exception handlers, and to pick the granularity of your try statement wrappings wisely. Especially in larger systems, exception\npolicies should be a part of the overall design.\nCore Language Summary\nCongratulations! This concludes your look at the fundamentals of the Python programming language. If you’ve gotten this far, you’ve become a fully operational Python\nCore Language Summary | 1155",
+        "metadata": {
+          "chunk_number": 3,
+          "page": 1207,
+          "source": "Learning Python, 5th Edition (Mark Lutz) (z-library.sk, 1lib.sk, z-lib.sk).pdf"
+        },
+        "similitud": 0.8521
+      }
+    ],
+    "modelo": "gemini-3.5-flash"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "id": 2,
+  "tipo": "habitual",
+  "modo": "gemini",
+  "pregunta": "¿Cómo leo y escribo archivos de texto en Python?",
+  "status": 200,
+  "respuesta_api": {
+    "respuesta": "De acuerdo con los fragmentos proporcionados, existen tres pasos principales para leer o escribir archivos en Python [2]:\n\n1. **Abrir el archivo:** Se llama a la función `open()` pasándole una cadena con la ruta del archivo (ya sea absoluta o relativa), lo cual devuelve un objeto `File` [2]. \n   * *Nota para escritura:* Para escribir texto en un archivo, es necesario llamar a `open()` indicando un segundo argumento que le especifique a Python que deseas escribir en él [1].\n2. **Leer o escribir:** Se llama al método `read()` o al método `write()` en el objeto `File` [2]. Otras formas descritas de leer un archivo incluyen leer el archivo entero de una vez, iterar sobre el objeto de archivo mediante un bucle, o almacenar sus líneas en una lista [5].\n3. **Cerrar el archivo:** Se cierra llamando al método `close()` sobre el objeto `File` [2].\n\n### Ejemplo de apertura de archivo\nPara abrir un archivo en Windows y obtener el objeto `File` [2]:\n\n```python\nhelloFile = open('C:\\\\Users\\\\your_home_folder\\\\hello.txt')\n```",
+    "fuentes": [
+      {
+        "texto": ">>> message.replace('dog', 'cat')\n'I really like cats.'\nRead in each line from the file you just created, learning_python.txt, and\nreplace the word Python with the name of another language, such as C. Print\neach modified line to the screen.\nWriting to a File\nOne of the simplest ways to save data is to write it to a file. When you write\ntext to a file, the output will still be available after you close the terminal\ncontaining your program’s output. You can examine output after a program\nfinishes running, and you can share the output files with others as well. You\ncan also write programs that read the text back into memory and work with\nit again later.\nWriting to an Empty File\nTo write text to a file, you need to call open() with a second argument telling\nPython that you want to write to the file. To see how this works, let’s write a\nsimple message and store it in a file instead of printing it to the screen:",
+        "metadata": {
+          "chunk_number": 2,
+          "source": "Python Crash Course A Hands-On, Project-Based Introduction to Programming (Eric Matthes) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "page": 230
+        },
+        "similitud": 0.8442
+      },
+      {
+        "texto": "Fortunately, many modules make working with binary files easier—you will\nexplore one of them, the shelve module, later in this chapter.\nThere are three steps to reading or writing files in Python.\n1.\t Call the open() function to return a File object.\n2.\t Call the read() or write() method on the File object.\n3.\t Close the file by calling the close() method on the File object.\nOpening Files with the open() Function\nTo open a file with the open() function, you pass it a string path indicating\nthe file you want to open; it can be either an absolute or relative path. The\nopen() function returns a File object.\nTry it by creating a text file named hello.txt using Notepad or TextEdit.\nType Hello world! as the content of this text file and save it in your user\nhome folder. Then, if you’re using Windows, enter the following into the\ninteractive shell:\n>>> helloFile = open('C:\\\\Users\\\\your_home_folder\\\\hello.txt')\nIf you’re using OS X, enter the following into the interactive shell instead:",
+        "metadata": {
+          "page": 205,
+          "chunk_number": 2,
+          "source": "Automate the Boring Stuff with Python Practical Programming for Total Beginners (Al Sweigart) (z-library.sk, 1lib.sk, z-lib.sk).pdf"
+        },
+        "similitud": 0.8413
+      },
+      {
+        "texto": "organize data.\nChapter 5: Dictionaries and Structuring Data  Introduces the dictionary data type and shows you more powerful ways to organize data.\nChapter 6: Manipulating Strings  Covers working with text data\n(called strings in Python).\nPart II: Automating Tasks\nChapter 7: Pattern Matching with Regular Expressions  Covers how\nPython can manipulate strings and search for text patterns with regular\nexpressions.\nChapter 8: Reading and Writing Files  Explains how your programs\ncan read the contents of text files and save information to files on your\nhard drive.\nChapter 9: Organizing Files  Shows how Python can copy, move,\nrename, and delete large numbers of files much faster than a human\nuser can. It also explains compressing and decompressing files.",
+        "metadata": {
+          "source": "Automate the Boring Stuff with Python Practical Programming for Total Beginners (Al Sweigart) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "chunk_number": 3,
+          "page": 29
+        },
+        "similitud": 0.8401
+      },
+      {
+        "texto": "However, the user can quickly enter large amounts of text through the clip\nboard. This ability provides a useful avenue for writing programs that manipulate massive amounts of text. These text-based programs might not have\nflashy windows or graphics, but they can get a lot of useful work done quickly.\nAnother way to manipulate large amounts of text is reading and writing\nfiles directly off the hard drive. You’ll learn how to do this with Python in\nthe next chapter.",
+        "metadata": {
+          "source": "Automate the Boring Stuff with Python Practical Programming for Total Beginners (Al Sweigart) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "page": 165,
+          "chunk_number": 3
+        },
+        "similitud": 0.8342
+      },
+      {
+        "texto": "Files and Exceptions   197\nTry It Yourself\n10-1. Learning Python: Open a blank file in your text editor and write a few\nlines summarizing what you’ve learned about Python so far. Start each line\nwith the phrase In Python you can.... Save the file as learning_python.txt in the\nsame directory as your exercises from this chapter. Write a program that reads\nthe file and prints what you wrote three times. Print the contents once by reading in the entire file, once by looping over the file object, and once by storing\nthe lines in a list and then working with them outside the with block.\n10-2. Learning C: You can use the replace() method to replace any word in a\nstring with a different word. Here’s a quick example showing how to replace\n'dog' with 'cat' in a sentence:\n>>> message = \"I really like dogs.\"\n>>> message.replace('dog', 'cat')\n'I really like cats.'\nRead in each line from the file you just created, learning_python.txt, and",
+        "metadata": {
+          "chunk_number": 1,
+          "page": 230,
+          "source": "Python Crash Course A Hands-On, Project-Based Introduction to Programming (Eric Matthes) (z-library.sk, 1lib.sk, z-lib.sk).pdf"
+        },
+        "similitud": 0.8331
+      }
+    ],
+    "modelo": "gemini-3.5-flash"
+  }
+}

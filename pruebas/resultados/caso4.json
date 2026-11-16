@@ -1,0 +1,56 @@
+{
+  "id": 4,
+  "tipo": "documentos",
+  "modo": "busqueda",
+  "pregunta": "¿Para qué sirve el módulo pyperclip y cómo copio texto al portapapeles?",
+  "status": 200,
+  "respuesta_api": {
+    "fuentes": [
+      {
+        "texto": "Copying and Pasting Strings with the pyperclip Module\nThe pyperclip module has copy() and paste() functions that can send text\nto and receive text from your computer’s clipboard. Sending the output of\nyour program to the clipboard will make it easy to paste it to an email, word\nprocessor, or some other software.\nPyperclip does not come with Python. To install it, follow the directions\nfor installing third-party modules in Appendix A. After installing the\npyperclip module, enter the following into the interactive shell:\n>>> import pyperclip\n>>> pyperclip.copy('Hello world!')\n>>> pyperclip.paste()\n'Hello world!'\nOf course, if something outside of your program changes the clipboard\ncontents, the paste() function will return it. For example, if I copied this\nsentence to the clipboard and then called paste(), it would look like this:\n>>> pyperclip.paste()\n'For example, if I copied this sentence to the clipboard and then called\npaste(), it would look like this:'",
+        "metadata": {
+          "source": "Automate the Boring Stuff with Python Practical Programming for Total Beginners (Al Sweigart) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "page": 159,
+          "chunk_number": 2
+        },
+        "similitud": 0.8322
+      },
+      {
+        "texto": "For example, your phone and email address extractor will need to do\nthe following:\n•\nGet the text off the clipboard.\n•\nFind all phone numbers and email addresses in the text.\n•\nPaste them onto the clipboard.\nNow you can start thinking about how this might work in code. The\ncode will need to do the following:\n•\nUse the pyperclip module to copy and paste strings.\n•\nCreate two regexes, one for matching phone numbers and the other for\nmatching email addresses.\n•\nFind all matches, not just the first match, of both regexes.\n•\nNeatly format the matched strings into a single string to paste.\n•\nDisplay some kind of message if no matches were found in the text.",
+        "metadata": {
+          "chunk_number": 3,
+          "source": "Automate the Boring Stuff with Python Practical Programming for Total Beginners (Al Sweigart) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "page": 189
+        },
+        "similitud": 0.829
+      },
+      {
+        "texto": "the bottom after executing an instruction. Enter this code instead:\n>>> import pyperclip\n>>> numbers = ''\n>>> for i in range(200):\n      numbers = numbers + str(i) + '\\n'\n>>> pyperclip.copy(numbers)\nThis imports pyperclip and sets up an empty string, numbers. The\ncode then loops through 200 numbers and adds each number to numbers,\nalong with a newline. After pyperclip.copy(numbers), the clipboard will be\nloaded with 200 lines of numbers. Open a new file editor window and\npaste the text into it. This will give you a large text window to try scrolling in. Enter the following code into the interactive shell:\n>>> import time, pyautogui\n>>> time.sleep(5); pyautogui.scroll(100)",
+        "metadata": {
+          "source": "Automate the Boring Stuff with Python Practical Programming for Total Beginners (Al Sweigart) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "chunk_number": 3,
+          "page": 446
+        },
+        "similitud": 0.8287
+      },
+      {
+        "texto": "installing, 414\npausing function calls, 415\nscreenshots, 423–424\npyautogui.mouseDown() function, 420\npyautogui.moveRel() function, 416, 417\npyautogui.moveTo() function, 416\npyautogui.PAUSE variable, 415\npyautogui.position() function, 419\npyautogui.press() function, 436\npyautogui.rightClick() function, 420\npyautogui.screenshot() function, 423\npyautogui.size() function, 416\npyautogui.typewrite() function, 426,\n427, 431\npy.exe program, 444–445\npyobjc module, 442\nPyPDF2 module\ncombining pages from multiple\nPDFs, 303–306\ncreating PDFs, 298–299\ndecrypting PDFs, 297–298\nencrypting PDFs, 302–303\nextracting text from PDFs, 296–297\nformat overview, 295–296\npages in PDFs\ncopying, 299–300\noverlaying, 301–302\nrotating, 300–301\npyperclip module, 135\nPython\ndata types, 16–17\ndownloading, 6\nexample program, 21–22\nhelp, 8–9\ninstalling, 6–7\ninteractive shell, 8\ninterpreter, defined, 7\nmath and, 4\noverview, 4\nprogramming overview, 3\nstarting IDLE, 7–8\npython-docx module, 306\npyzmail module, 366, 373–375",
+        "metadata": {
+          "chunk_number": 2,
+          "source": "Automate the Boring Stuff with Python Practical Programming for Total Beginners (Al Sweigart) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "page": 498
+        },
+        "similitud": 0.8217
+      },
+      {
+        "texto": "want to copy the key’s value to the clipboard using pyperclip.copy(). (Since\nyou’re using the pyperclip module, you need to import it.) Note that you\ndon’t actually need the account variable; you could just use sys.argv[1] everywhere account is used in this program. But a variable named account is much\nmore readable than something cryptic like sys.argv[1].\nMake your program look like the following:\n#! python3\n# pw.py - An insecure password locker program.",
+        "metadata": {
+          "source": "Automate the Boring Stuff with Python Practical Programming for Total Beginners (Al Sweigart) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "chunk_number": 3,
+          "page": 161
+        },
+        "similitud": 0.8216
+      }
+    ]
+  }
+}

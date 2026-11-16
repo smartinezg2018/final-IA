@@ -1,0 +1,58 @@
+{
+  "id": 5,
+  "tipo": "límite",
+  "modo": "gemini",
+  "pregunta": "¿Cómo creo un DataFrame en pandas y filtro sus filas?",
+  "status": 200,
+  "respuesta_api": {
+    "respuesta": "El contexto proporcionado no contiene información sobre cómo crear un DataFrame en pandas ni cómo filtrar sus filas.",
+    "fuentes": [
+      {
+        "texto": "else:\n            visited[thisDir.upper()] = True\n        for filename in filesHere:\n            if filename.endswith('.py'):\n                pypath  = os.path.join(thisDir, filename)\n                try:\n                    pysize = os.path.getsize(pypath)\n                except:\n                    print('skipping', pypath)\n                allsizes.append((pysize, pypath))\nallsizes.sort()\npprint.pprint(allsizes[:3])\npprint.pprint(allsizes[-3:])\n# Sum columns in a text file separated by commas\nfilename = 'data.txt'\nsums = {}\nfor line in open(filename):\n    cols = line.split(',')\n1500 | Appendix D: Solutions to End-of-Part Exercises",
+        "metadata": {
+          "source": "Learning Python, 5th Edition (Mark Lutz) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "page": 1552,
+          "chunk_number": 2
+        },
+        "similitud": 0.8193
+      },
+      {
+        "texto": "topic.html\n{% extends 'learning_logs/base.html' %}\nu {% block header %}\n  <h2>{{ topic }}</h2>\n{% endblock header %}\n{% block content %}\n  <p>\n    <a href=\"{% url 'learning_logs:new_entry' topic.id %}\">add new entry</a>\n  </p>\n  {% for entry in entries %}\nv     <div class=\"panel panel-default\">\nw       <div class=\"panel-heading\">\nx         <h3>\n          {{ entry.date_added|date:'M d, Y H:i' }}\ny           <small>\n            <a href=\"{% url 'learning_logs:edit_entry' entry.id %}\">\n              edit entry</a>\n          </small>\n        </h3>\n      </div>\nz       <div class=\"panel-body\">\n        {{ entry.text|linebreaks }}\n      </div>\n    </div> <!-- panel -->",
+        "metadata": {
+          "chunk_number": 2,
+          "source": "Python Crash Course A Hands-On, Project-Based Introduction to Programming (Eric Matthes) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "page": 497
+        },
+        "similitud": 0.8191
+      },
+      {
+        "texto": "We start by importing pygal and the Pygal styles we’ll need for the\nchart. We continue to print the status of the API call response and the total\nnumber of repositories found, so we’ll know if there was a problem with the\nAPI call. We no longer print information about the specific projects that are\nreturned, because that information will be included in the visualization.\nAt u we create two empty lists to store the data we’ll include in the\nchart. We’ll need the name of each project in order to label the bars, and\nwe’ll need the number of stars to determine the height of the bars. In the\nloop, we append the name of each project and number of stars it has to\nthese lists v.\nNext we define a style using the LightenStyle class (alias LS) and base it\non a dark shade of blue w. We also pass the base_style argument to use the\nLightColorizedStyle class (alias LCS). We then use Bar() to make a simple bar\nchart and pass it my_style x. We pass two more style arguments: we set the",
+        "metadata": {
+          "chunk_number": 2,
+          "page": 418,
+          "source": "Python Crash Course A Hands-On, Project-Based Introduction to Programming (Eric Matthes) (z-library.sk, 1lib.sk, z-lib.sk).pdf"
+        },
+        "similitud": 0.8182
+      },
+      {
+        "texto": "commands:\n(ll_env)learning_log$ pip install dj-database-url\n(ll_env)learning_log$ pip install dj-static\n(ll_env)learning_log$ pip install static3\n(ll_env)learning_log$ pip install gunicorn",
+        "metadata": {
+          "source": "Python Crash Course A Hands-On, Project-Based Introduction to Programming (Eric Matthes) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "page": 499,
+          "chunk_number": 3
+        },
+        "similitud": 0.8161
+      },
+      {
+        "texto": "P R A C T I C A L P R O G R A M M I N G\nF O R T O T A L B E G I N N E R S\nA L S W E I G A R T\nAUTOMATE\nTHE BORING STUFF\nWITH PYTHON\nAUTOMATE\nTHE BORING STUFF\nWITH PYTHON",
+        "metadata": {
+          "source": "Automate the Boring Stuff with Python Practical Programming for Total Beginners (Al Sweigart) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+          "page": 1,
+          "chunk_number": 1
+        },
+        "similitud": 0.8158
+      }
+    ],
+    "modelo": "gemini-3.5-flash"
+  }
+}
