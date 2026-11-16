@@ -22,6 +22,39 @@ Chunk = dict[str, Any]
 InformeExtraccion = dict[str, Any]
 
 
+def limpiar_texto_extraido(texto: str) -> str:
+    """Aplica una limpieza conservadora sin destruir el formato del código.
+
+    Se conservan los saltos de línea normales y la indentación, ya que los PDF
+    contienen ejemplos de Python. Solo se corrigen caracteres problemáticos,
+    palabras partidas por maquetación y espacios al final de cada línea.
+    """
+    if not texto:
+        return ""
+
+    texto_limpio = (
+        texto.replace("\r\n", "\n")
+        .replace("\r", "\n")
+        .replace("\x00", "")
+        .replace("\u00ad", "")
+        .replace("\u00a0", " ")
+    )
+
+    # Une palabras cortadas por la maquetación del PDF: "progra-\nmación".
+    # La expresión exige letras a ambos lados para no alterar guiones de código.
+    texto_limpio = re.sub(
+        r"(?<=[^\W\d_])-\n(?=[^\W\d_])",
+        "",
+        texto_limpio,
+        flags=re.UNICODE,
+    )
+
+    lineas = [linea.rstrip() for linea in texto_limpio.split("\n")]
+    texto_limpio = "\n".join(lineas)
+    texto_limpio = re.sub(r"\n{3,}", "\n\n", texto_limpio)
+    return texto_limpio.strip()
+
+
 def _listar_pdfs(carpeta_pdfs: Path) -> list[Path]:
     """Devuelve los PDF directos de una carpeta en un orden estable."""
     return sorted(
@@ -154,10 +187,79 @@ def _nombre_para_chunk(nombre_archivo: str) -> str:
     return nombre_normalizado or "documento"
 
 
+def _unir_fragmentos_sin_duplicar(
+    anterior: str,
+    siguiente: str,
+    solapamiento_minimo: int = 8,
+) -> str:
+    """Une fragmentos y elimina solapamientos suficientemente largos.
+
+    Exigir varios caracteres evita borrar letras que coincidan por casualidad
+    entre el final de un chunk y el principio del siguiente.
+    """
+    limite = min(len(anterior), len(siguiente))
+    for longitud in range(limite, solapamiento_minimo - 1, -1):
+        if anterior.endswith(siguiente[:longitud]):
+            return anterior + siguiente[longitud:]
+    return f"{anterior}\n{siguiente}"
+
+
+def _fusionar_fragmentos_cortos(
+    fragmentos: list[str],
+    min_chunk_size: int,
+    longitud_maxima_fusion: int,
+) -> list[str]:
+    """Fusiona chunks cortos con un vecino, siempre dentro de una página.
+
+    Se prefiere el fragmento anterior. Si el chunk corto es el primero, o no
+    cabe con el anterior, se intenta unir con el siguiente. Un texto corto que
+    ocupa por sí solo toda una página se conserva para no perder información.
+    """
+    pendientes = [
+        fragmento.strip() for fragmento in fragmentos if fragmento.strip()
+    ]
+    if min_chunk_size == 0:
+        return pendientes
+
+    resultado: list[str] = []
+    indice = 0
+
+    while indice < len(pendientes):
+        fragmento = pendientes[indice]
+        if len(fragmento) >= min_chunk_size:
+            resultado.append(fragmento)
+            indice += 1
+            continue
+
+        if resultado:
+            fusion_anterior = _unir_fragmentos_sin_duplicar(
+                resultado[-1], fragmento
+            )
+            if len(fusion_anterior) <= longitud_maxima_fusion:
+                resultado[-1] = fusion_anterior
+                indice += 1
+                continue
+
+        if indice + 1 < len(pendientes):
+            fusion_siguiente = _unir_fragmentos_sin_duplicar(
+                fragmento, pendientes[indice + 1]
+            )
+            if len(fusion_siguiente) <= longitud_maxima_fusion:
+                pendientes[indice + 1] = fusion_siguiente
+                indice += 1
+                continue
+
+        resultado.append(fragmento)
+        indice += 1
+
+    return resultado
+
+
 def dividir_texto_en_chunks(
     paginas: list[PaginaExtraida],
-    chunk_size: int = 500,
-    chunk_overlap: int = 100,
+    chunk_size: int = 1000,
+    chunk_overlap: int = 150,
+    min_chunk_size: int = 100,
 ) -> list[Chunk]:
     """Divide el texto extraído sin mezclar el contenido de distintas páginas.
 
@@ -165,6 +267,7 @@ def dividir_texto_en_chunks(
         paginas: Resultado de :func:`extraer_texto_pdfs`.
         chunk_size: Cantidad máxima aproximada de caracteres por chunk.
         chunk_overlap: Caracteres compartidos entre chunks consecutivos.
+        min_chunk_size: Tamaño bajo el cual se intenta fusionar un fragmento.
 
     Returns:
         Lista de chunks con identificador, texto y metadatos de procedencia.
@@ -178,6 +281,10 @@ def dividir_texto_en_chunks(
         raise ValueError("chunk_overlap no puede ser negativo.")
     if chunk_overlap >= chunk_size:
         raise ValueError("chunk_overlap debe ser menor que chunk_size.")
+    if min_chunk_size < 0:
+        raise ValueError("min_chunk_size no puede ser negativo.")
+    if min_chunk_size >= chunk_size:
+        raise ValueError("min_chunk_size debe ser menor que chunk_size.")
 
     separador = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
@@ -187,7 +294,7 @@ def dividir_texto_en_chunks(
     chunks: list[Chunk] = []
 
     for pagina in paginas:
-        texto_pagina = str(pagina.get("texto", "")).strip()
+        texto_pagina = limpiar_texto_extraido(str(pagina.get("texto", "")))
         metadata = pagina.get("metadata", {})
         source = str(metadata.get("source", "documento.pdf"))
         page = metadata.get("page")
@@ -195,7 +302,11 @@ def dividir_texto_en_chunks(
         if not texto_pagina:
             continue
 
-        fragmentos = separador.split_text(texto_pagina)
+        fragmentos = _fusionar_fragmentos_cortos(
+            separador.split_text(texto_pagina),
+            min_chunk_size=min_chunk_size,
+            longitud_maxima_fusion=chunk_size + min_chunk_size,
+        )
         numero_chunk = 0
 
         for fragmento in fragmentos:
@@ -279,14 +390,20 @@ def _crear_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--chunk-size",
         type=int,
-        default=500,
-        help="Tamaño máximo aproximado del chunk (predeterminado: 500).",
+        default=1000,
+        help="Tamaño máximo aproximado del chunk (predeterminado: 1000).",
     )
     parser.add_argument(
         "--chunk-overlap",
         type=int,
+        default=150,
+        help="Solapamiento entre chunks (predeterminado: 150).",
+    )
+    parser.add_argument(
+        "--min-chunk-size",
+        type=int,
         default=100,
-        help="Solapamiento entre chunks (predeterminado: 100).",
+        help="Tamaño bajo el cual se intenta fusionar un chunk (predeterminado: 100).",
     )
     return parser
 
@@ -319,6 +436,13 @@ def _imprimir_informe(informe: InformeExtraccion, cantidad_chunks: int) -> None:
 
 def main() -> int:
     """Ejecuta el flujo completo desde la línea de comandos."""
+    # Algunos PDF contienen ligaduras y otros caracteres que la codificación
+    # cp1252 de ciertas consolas de Windows no puede imprimir.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
     argumentos = _crear_parser().parse_args()
 
     try:
@@ -331,6 +455,7 @@ def main() -> int:
             paginas,
             chunk_size=argumentos.chunk_size,
             chunk_overlap=argumentos.chunk_overlap,
+            min_chunk_size=argumentos.min_chunk_size,
         )
         ruta_json = guardar_chunks_json(chunks, argumentos.output)
         chunks_verificados = verificar_chunks_json(ruta_json, len(chunks))
