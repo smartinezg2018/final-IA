@@ -2,20 +2,9 @@
 
 import json
 
-import chromadb
-import torch
-from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
-MODELO = "intfloat/multilingual-e5-small"
-DISPOSITIVO = "cuda" if torch.cuda.is_available() else "cpu"
-
-modelo = SentenceTransformer(MODELO, device=DISPOSITIVO)
-if DISPOSITIVO == "cuda":
-    modelo.half()  # float16: más rápido en GPU, casi sin pérdida de calidad
-coleccion = chromadb.PersistentClient("chroma_db").get_or_create_collection(
-    "python_docs", metadata={"hnsw:space": "cosine"}
-)
+from rag import buscar, coleccion, modelo
 
 
 def cargar_chunks(ruta="chunks.json"):
@@ -41,13 +30,6 @@ def crear_indice(chunks, lote=500):
             barra.update(len(grupo))
 
 
-def buscar(pregunta, k=3):
-    """Devuelve los k chunks más parecidos a la pregunta."""
-    vector = modelo.encode("query: " + pregunta, normalize_embeddings=True)
-    resultado = coleccion.query(query_embeddings=[vector.tolist()], n_results=k)
-    return list(zip(resultado["documents"][0], resultado["metadatas"][0]))
-
-
 def main():
     print("Descargando los chunks")
     chunks = cargar_chunks()
@@ -60,8 +42,9 @@ def main():
     print("Realizar preguntas")
     for pregunta in ["¿Cómo funciona un decorador en Python?"]:
         print(f"\nPregunta: {pregunta}")
-        for texto, meta in buscar(pregunta):
-            print(f"- {meta['source']} (pág. {meta['page']}): {texto[:150]!r}")
+        for chunk in buscar(pregunta):
+            meta = chunk["metadata"]
+            print(f"- {meta['source']} (pág. {meta['page']}): {chunk['texto'][:150]!r}")
 
 
 if __name__ == "__main__":
