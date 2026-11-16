@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Biblioteca Python</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <style>
+    /* Layout: conversación a la izquierda; a la derecha, la "estantería" con los fragmentos
+       (libro, autor, página) de la respuesta seleccionada. En móvil la estantería es una hoja inferior. */
+    :root {
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+      --surface-2: #eaeef4;
+      --fg: #16202d;
+      --muted: #5a6880;
+      --line: #dbe1ea;
+      --accent: #2f6db0;          /* azul Python */
+      --accent-fg: #ffffff;
+      --accent-soft: #e2ecf8;
+      --mark: #f2c230;            /* amarillo Python */
+      --mark-fg: #1d2330;
+      --error: #b3261e;
+      --error-soft: #fbe9e7;
+      --ok: #23864f;
+      --shadow: 0 12px 40px rgba(22, 32, 45, .18);
+      --book-1: #2f6db0; --book-2: #b4541f; --book-3: #23866a; --book-4: #8a4fb8; --book-5: #9a6b1e;
+      --code-bg: #eef2f7; --tk-key: #7a3eb1; --tk-str: #2b7a30; --tk-com: #788497;
+      --tk-num: #b4541f; --tk-fn: #2f6db0; --tk-meta: #9a6b1e;
+
+      --f-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+      --f-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --f-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+      --panel-w: 420px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0e131a; --surface: #151b24; --surface-2: #1b2330; --fg: #e3e8ef; --muted: #93a0b3;
+        --line: #283241; --accent: #6ea8ec; --accent-fg: #0b1220; --accent-soft: #1b2a3e;
+        --mark: #f2c94c; --mark-fg: #1d2330; --error: #ff8a80; --error-soft: #3a1d1b; --ok: #5cc58a;
+        --shadow: 0 12px 40px rgba(0, 0, 0, .5);
+        --book-1: #6ea8ec; --book-2: #e8915a; --book-3: #5cc4a2; --book-4: #b98be0; --book-5: #d9a94e;
+        --code-bg: #111720; --tk-key: #c79bf2; --tk-str: #8fd18f; --tk-com: #6f7d90;
+        --tk-num: #e8915a; --tk-fn: #6ea8ec; --tk-meta: #d9a94e;
+        color-scheme: dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0e131a; --surface: #151b24; --surface-2: #1b2330; --fg: #e3e8ef; --muted: #93a0b3;
+      --line: #283241; --accent: #6ea8ec; --accent-fg: #0b1220; --accent-soft: #1b2a3e;
+      --mark: #f2c94c; --mark-fg: #1d2330; --error: #ff8a80; --error-soft: #3a1d1b; --ok: #5cc58a;
+      --shadow: 0 12px 40px rgba(0, 0, 0, .5);
+      --book-1: #6ea8ec; --book-2: #e8915a; --book-3: #5cc4a2; --book-4: #b98be0; --book-5: #d9a94e;
+      --code-bg: #111720; --tk-key: #c79bf2; --tk-str: #8fd18f; --tk-com: #6f7d90;
+      --tk-num: #e8915a; --tk-fn: #6ea8ec; --tk-meta: #d9a94e;
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { overflow: hidden; } /* app de una sola pantalla: solo hacen scroll el chat y el panel */
+    body {
+      margin: 0; background: var(--bg); color: var(--fg);
+      font: 15px/1.6 var(--f-body);
+      -webkit-font-smoothing: antialiased;
+    }
+    button, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    [hidden] { display: none !important; }
+
+    /* ---------- Estructura ---------- */
+    .app { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); }
+    .barra-sup {
+      display: flex; align-items: center; gap: 14px;
+      padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px));
+      background: var(--surface); border-bottom: 1px solid var(--line);
+    }
+    .marca { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .prompt {
+      font: 600 13px/1 var(--f-mono); letter-spacing: -.02em;
+      background: #2f6db0; color: #ffd43b; /* colores fijos del logo de Python, iguales en ambos temas */
+      padding: 8px 7px; border-radius: 7px; flex: none;
+    }
+    .marca h1 { font: 700 1.1rem/1.1 var(--f-display); margin: 0; letter-spacing: -.01em; }
+    #estado { margin: 2px 0 0; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #estado::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); margin-right: 6px; vertical-align: 1px; }
+    #estado.ok::before { background: var(--ok); }
+    #estado.mal::before { background: var(--error); }
+    .acciones-sup { margin-left: auto; display: flex; gap: 8px; flex: none; }
+    .btn-sec {
+      border: 1px solid var(--line); background: var(--surface); border-radius: 8px;
+      padding: 6px 12px; font-size: 13px; font-weight: 500;
+    }
+    .btn-sec:hover { background: var(--surface-2); }
+    #abrir-panel { display: none; }
+
+    .cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) var(--panel-w); min-height: 0; }
+    .chat { display: grid; grid-template-rows: minmax(0, 1fr) auto; grid-template-columns: minmax(0, 1fr); min-height: 0; min-width: 0; }
+    .columna { max-width: 780px; margin: 0 auto; width: 100%; }
+    #scroll {
+      overflow-y: auto;
+      padding: 28px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
+    }
+    #mensajes { display: flex; flex-direction: column; gap: 28px; }
+
+    /* ---------- Estado vacío ---------- */
+    .vacio { padding-top: 6vh; display: grid; gap: 22px; }
+    .vacio h2 { font: 600 clamp(1.5rem, 3vw, 2rem)/1.15 var(--f-display); margin: 0; text-wrap: balance; letter-spacing: -.015em; }
+    .vacio p { margin: 0; color: var(--muted); max-width: 60ch; }
+    .estante { display: flex; flex-wrap: wrap; gap: 8px; }
+    .lomo {
+      display: inline-flex; align-items: center; gap: 8px; max-width: 100%;
+      padding: 6px 12px 6px 8px; border-radius: 8px; background: var(--surface);
+      border: 1px solid var(--line); font-size: 13px;
+    }
+    .lomo::before { content: ""; width: 4px; height: 18px; border-radius: 2px; background: var(--libro); flex: none; }
+    .lomo span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lomo small { color: var(--muted); }
+    .etiqueta { font: 600 11px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+    .sugerencias { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+    .sugerencia {
+      text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+      padding: 12px 14px; font-size: 14px; line-height: 1.45;
+    }
+    .sugerencia:hover { border-color: var(--accent); }
+    .sugerencia code { font: 13px var(--f-mono); color: var(--accent); }
+
+    /* ---------- Mensajes ---------- */
+    .msg { min-width: 0; }
+    .msg.usuario { display: flex; justify-content: flex-end; }
+    .burbuja {
+      max-width: min(80%, 60ch); background: var(--accent); color: var(--accent-fg);
+      padding: 10px 14px; border-radius: 16px 16px 4px 16px; white-space: pre-wrap; overflow-wrap: anywhere;
+    }
+    .msg.asistente { display: grid; gap: 10px; }
+    .msg-cab { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+    .msg-cab .quien { font: 600 12px var(--f-mono); color: var(--fg); }
+    .msg-cab .viendo { color: var(--accent); font-weight: 600; }
+    .msg-cab .viendo::before { content: "◂ "; }
+
+    .prosa { min-width: 0; overflow-wrap: anywhere; }
+    .prosa > :first-child { margin-top: 0; }
+    .prosa > :last-child { margin-bottom: 0; }
+    .prosa p, .prosa ul, .prosa ol { margin: 0 0 .8em; max-width: 72ch; }
+    .prosa li { margin: .2em 0; }
+    .prosa h1, .prosa h2, .prosa h3, .prosa h4 { font-family: var(--f-display); line-height: 1.25; margin: 1.2em 0 .5em; text-wrap: balance; }
+    .prosa h1 { font-size: 1.3rem; } .prosa h2 { font-size: 1.18rem; } .prosa h3, .prosa h4 { font-size: 1.05rem; }
+    .prosa :not(pre) > code { font: .88em var(--f-mono); background: var(--code-bg); padding: .1em .35em; border-radius: 4px; }
+    .prosa blockquote { margin: 0 0 .8em; padding-left: 14px; border-left: 3px solid var(--line); color: var(--muted); }
+    .prosa table { border-collapse: collapse; font-size: 14px; }
+    .prosa th, .prosa td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+    .tabla { overflow-x: auto; margin: 0 0 .8em; }
+    .bloque-codigo { position: relative; margin: 0 0 .9em; }
+    .bloque-codigo pre {
+      margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px;
+      padding: 14px 16px; overflow-x: auto; font: 13px/1.55 var(--f-mono);
+    }
+    .bloque-codigo pre code { font: inherit; background: none; padding: 0; }
+    .copiar {
+      position: absolute; top: 8px; right: 8px; opacity: 0; transition: opacity .15s;
+      background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+      font-size: 12px; padding: 2px 8px; color: var(--muted);
+    }
+    .bloque-codigo:hover .copiar, .copiar:focus-visible { opacity: 1; }
+    @media (hover: none) { .copiar { opacity: 1; } }
+
+    .hljs-keyword, .hljs-built_in, .hljs-literal { color: var(--tk-key); }
+    .hljs-string, .hljs-regexp { color: var(--tk-str); }
+    .hljs-comment, .hljs-quote { color: var(--tk-com); font-style: italic; }
+    .hljs-number { color: var(--tk-num); }
+    .hljs-title, .hljs-title.function_, .hljs-title.class_ { color: var(--tk-fn); }
+    .hljs-meta, .hljs-params, .hljs-attr { color: var(--tk-meta); }
+
+    .cita {
+      display: inline-block; border: 0; margin: 0 1px; padding: 0 5px; border-radius: 4px;
+      background: var(--accent-soft); color: var(--accent);
+      font: 600 11px/1.6 var(--f-mono); vertical-align: 1px;
+    }
+    .cita:hover { background: var(--accent); color: var(--accent-fg); }
+
+    .fuentes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .fuentes .etiqueta { margin-right: 4px; }
+    .ref {
+      display: inline-flex; align-items: center; gap: 7px; max-width: 100%;
+      border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
+      padding: 3px 10px 3px 3px; font-size: 12.5px; line-height: 1.4;
+    }
+    .ref:hover { border-color: var(--libro); }
+    .ref-n {
+      flex: none; min-width: 20px; height: 20px; border-radius: 999px; display: grid; place-items: center;
+      background: var(--libro); color: var(--surface); font: 600 11px/1 var(--f-mono);
+    }
+    .ref-libro { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 22ch; }
+    .ref-pag { color: var(--muted); font: 11.5px var(--f-mono); white-space: nowrap; }
+    .ref.sin-citar { opacity: .6; }
+    .ref.sin-citar:hover { opacity: 1; }
+    .nota-fuentes { font-size: 12px; color: var(--muted); }
+
+    .aviso-error {
+      background: var(--error-soft); color: var(--error); border: 1px solid var(--error);
+      border-radius: 10px; padding: 12px 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    }
+    .aviso-error p { margin: 0; flex: 1 1 240px; }
+    .aviso-error button { border: 1px solid var(--error); background: transparent; color: var(--error); border-radius: 8px; padding: 4px 12px; font-size: 13px; font-weight: 600; }
+
+    .escribiendo { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }
+    .puntos { display: inline-flex; gap: 4px; }
+    .puntos i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: salto 1s infinite ease-in-out; }
+    .puntos i:nth-child(2) { animation-delay: .15s; } .puntos i:nth-child(3) { animation-delay: .3s; }
+    @keyframes salto { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+
+    /* ---------- Compositor ---------- */
+    .compositor {
+      padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+      background: linear-gradient(to bottom, transparent, var(--bg) 30%);
+    }
+    #formulario {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+      padding: 10px 10px 8px 14px; display: grid; gap: 6px;
+      box-shadow: 0 1px 2px rgba(22, 32, 45, .04);
+    }
+    #formulario:focus-within { border-color: var(--accent); }
+    #pregunta {
+      width: 100%; border: 0; outline: none; resize: none; background: transparent;
+      min-height: 26px; max-height: 200px; padding: 4px 0; line-height: 1.5;
+    }
+    .controles { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+    .controles label { display: inline-flex; align-items: center; gap: 6px; }
+    .controles select {
+      border: 1px solid var(--line); background: var(--surface-2); border-radius: 6px; padding: 2px 6px; font-size: 13px;
+    }
+    #enviar {
+      margin-left: auto; border: 0; border-radius: 9px; background: var(--accent); color: var(--accent-fg);
+      font-weight: 600; font-size: 14px; padding: 7px 16px; display: inline-flex; align-items: center; gap: 6px;
+    }
+    #enviar:disabled { opacity: .5; cursor: not-allowed; }
+    .pista { font-size: 11.5px; color: var(--muted); text-align: center; margin: 6px 0 0; }
+    .pista kbd { font: 11px var(--f-mono); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; background: var(--surface); }
+
+    /* ---------- Panel de referencias ---------- */
+    #panel {
+      background: var(--surface-2); border-left: 1px solid var(--line);
+      display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr);
+      min-height: 0; min-width: 0; overflow: hidden;
+    }
+    .panel-cab { min-width: 0; padding: 18px 20px 14px; border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
+    .panel-cab .fila { display: flex; align-items: center; gap: 10px; }
+    .panel-cab h2 { font: 600 1.05rem/1.2 var(--f-display); margin: 0; }
+    #cerrar-panel { display: none; margin-left: auto; }
+    #panel-pregunta { margin: 0; font-size: 13px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    #panel-resumen { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+    #panel-resumen .lomo { max-width: 100%; }
+    #panel-resumen .lomo small { flex: none; }
+    #panel-cuerpo { min-width: 0; overflow-x: hidden; overflow-y: auto; padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 12px; }
+    .panel-vacio { color: var(--muted); font-size: 14px; display: grid; gap: 10px; padding-top: 8px; }
+    .panel-vacio p { margin: 0; }
+
+    .frag {
+      min-width: 0;
+      background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+      padding: 14px 16px; display: grid; gap: 8px; scroll-margin: 12px; transition: box-shadow .25s, border-color .25s;
+    }
+    .frag.resaltado { border-color: var(--libro); box-shadow: 0 0 0 2px var(--libro); }
+    .frag-top { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .frag-top .ref-n { min-width: 22px; height: 22px; }
+    .estado-cita { font: 600 10.5px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; padding: 4px 7px; border-radius: 5px; }
+    .estado-cita.si { background: var(--mark); color: var(--mark-fg); }
+    .estado-cita.no { background: var(--surface-2); color: var(--muted); }
+    .sim { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font: 11.5px var(--f-mono); font-variant-numeric: tabular-nums; }
+    .sim .barra { width: 48px; height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+    .sim .barra span { display: block; height: 100%; background: var(--libro); }
+    .frag h3 { margin: 0; font: 600 14.5px/1.35 var(--f-display); text-wrap: balance; }
+    .frag-biblio { margin: 0; font: 12px/1.5 var(--f-mono); color: var(--muted); }
+    .frag-biblio b { color: var(--fg); font-weight: 600; }
+    .frag-texto {
+      margin: 0; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere;
+      padding: 10px 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line);
+      max-height: 9.5em; overflow: hidden;
+      -webkit-mask-image: linear-gradient(#000 65%, transparent); mask-image: linear-gradient(#000 65%, transparent);
+    }
+    .frag.abierto .frag-texto { max-height: none; -webkit-mask-image: none; mask-image: none; }
+    .frag-acciones { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; }
+    .frag-acciones button, .frag-acciones a { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 500; text-decoration: none; }
+    .frag-acciones a:hover, .frag-acciones button:hover { text-decoration: underline; }
+
+    #velo { display: none; }
+
+    @media (max-width: 960px) {
+      .cuerpo { grid-template-columns: minmax(0, 1fr); }
+      #abrir-panel { display: inline-flex; }
+      #cerrar-panel { display: inline-flex; }
+      #panel {
+        position: fixed; left: 0; right: 0; bottom: 0; height: min(80%, 720px); z-index: 30;
+        border-left: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0;
+        box-shadow: var(--shadow); transform: translateY(105%); transition: transform .25s ease;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      #panel.abierto { transform: translateY(0); }
+      .panel-cab, #panel-cuerpo { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+      #velo { display: block; position: fixed; inset: 0; z-index: 20; background: rgba(10, 14, 20, .4); }
+      .burbuja { max-width: 88%; }
+      .pista { display: none; }
+    }
+    @media (max-width: 520px) {
+      #nueva .largo { display: none; }
+      .ref-libro { max-width: 14ch; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="barra-sup">
+    <div class="marca">
+      <span class="prompt" aria-hidden="true">&gt;&gt;&gt;</span>
+      <div style="min-width:0">
+        <h1>Biblioteca Python</h1>
+        <p id="estado">Conectando con la API…</p>
+      </div>
+    </div>
+    <div class="acciones-sup">
+      <button type="button" class="btn-sec" id="abrir-panel">Referencias</button>
+      <button type="button" class="btn-sec" id="nueva"><span class="largo">Nueva conversación</span><span aria-hidden="true"> ＋</span></button>
+    </div>
+  </header>
+
+  <div class="cuerpo">
+    <main class="chat">
+      <div id="scroll">
+        <div class="columna" id="mensajes" aria-live="polite"></div>
+      </div>
+
+      <div class="compositor">
+        <div class="columna">
+          <form id="formulario">
+            <label for="pregunta" class="etiqueta" hidden>Pregunta</label>
+            <textarea id="pregunta" rows="1" placeholder="Pregunta algo sobre Python…" autocomplete="off"></textarea>
+            <div class="controles">
+              <label for="modo">Modo
+                <select id="modo">
+                  <option value="gemini">Respuesta con Gemini</option>
+                  <option value="busqueda">Solo fragmentos</option>
+                </select>
+              </label>
+              <label for="k">Fragmentos
+                <select id="k">
+                  <option>3</option><option selected>5</option><option>8</option><option>10</option>
+                </select>
+              </label>
+              <button id="enviar" type="submit">Enviar <span aria-hidden="true">↵</span></button>
+            </div>
+          </form>
+          <p class="pista"><kbd>Enter</kbd> envía · <kbd>Shift</kbd>+<kbd>Enter</kbd> nueva línea · haz clic en una cita para ver de dónde salió</p>
+        </div>
+      </div>
+    </main>
+
+    <aside id="panel" aria-label="Referencias de la respuesta">
+      <div class="panel-cab">
+        <div class="fila">
+          <h2>Referencias</h2>
+          <button type="button" class="btn-sec" id="cerrar-panel">Cerrar</button>
+        </div>
+        <p id="panel-pregunta" hidden></p>
+        <div id="panel-resumen"></div>
+      </div>
+      <div id="panel-cuerpo"></div>
+    </aside>
+  </div>
+</div>
+<div id="velo" hidden></div>
+
+<script>
+const $ = (sel, raiz = document) => raiz.querySelector(sel);
+const CLAVE = "biblioteca-python-chat-v1";
+const MAX_HISTORIAL = 6; // turnos que se mandan a Gemini como contexto
+const SUGERENCIAS = [
+  "¿Qué es una <code>list comprehension</code> y cuándo conviene usarla?",
+  "¿Cómo leo y escribo archivos de texto en Python?",
+  "¿Qué diferencia hay entre una tupla y una lista?",
+  "Explícame los decoradores con un ejemplo",
+];
+
+let estado = { mensajes: [], activo: null };
+let libros = [];
+let enviando = false;
+let geminiDisponible = true;
+
+if (window.hljs) hljs.configure({ ignoreUnescapedHTML: true });
+
+/* ---------- Persistencia (solo en este navegador) ---------- */
+function cargarGuardado() {
+  try {
+    const datos = JSON.parse(localStorage.getItem(CLAVE));
+    if (datos && Array.isArray(datos.mensajes)) estado = datos;
+  } catch { /* sin almacenamiento: se empieza vacío */ }
+}
+function guardar() {
+  try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch { /* ignorar */ }
+}
+
+/* ---------- Utilidades ---------- */
+const nuevoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+function infoLibro(source) {
+  let nombre = String(source || "").replace(/\.pdf$/i, "");
+  nombre = nombre.replace(/\s*\([^()]*z-lib[^()]*\)\s*$/i, "").replace(/_/g, " ").trim();
+  const m = nombre.match(/^(.*\S)\s*\(([^()]+)\)$/);
+  const titulo = m ? m[1] : nombre;
+  const autor = m ? m[2] : "";
+  return { titulo, autor, corto: titulo.split(",")[0], color: colorLibro(source) };
+}
+function colorLibro(source) {
+  let h = 0;
+  for (const c of String(source)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return `var(--book-${(h % 5) + 1})`;
+}
+const urlPdf = (meta) => `/pdfs/${encodeURIComponent(meta.source)}#page=${encodeURIComponent(meta.page)}`;
+
+function el(tag, attrs = {}, ...hijos) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === "class") e.className = v;
+    else if (k === "style") e.setAttribute("style", v);
+    else if (k.startsWith("data-")) e.setAttribute(k, v);
+    else e[k] = v;
+  }
+  e.append(...hijos.filter((h) => h != null));
+  return e;
+}
+
+/* Markdown seguro + citas [n] convertidas en botones que abren la referencia. */
+function renderMarkdown(texto, total) {
+  const tpl = document.createElement("template");
+  tpl.innerHTML = DOMPurify.sanitize(marked.parse(texto || ""));
+  const citadas = new Set();
+  const re = /\[(\d{1,2}(?:\s*[,;]\s*\d{1,2})*)\]/g;
+  const nodos = [];
+  const walker = document.createTreeWalker(tpl.content, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const p = walker.currentNode.parentElement;
+    if (!p || !p.closest("code, pre, a")) nodos.push(walker.currentNode);
+  }
+  for (const nodo of nodos) {
+    const t = nodo.nodeValue;
+    re.lastIndex = 0;
+    if (!re.test(t)) continue;
+    const frag = document.createDocumentFragment();
+    let ultimo = 0;
+    t.replace(re, (todo, grupo, idx) => {
+      frag.append(t.slice(ultimo, idx));
+      const nums = grupo.split(/[,;]/).map((s) => parseInt(s, 10));
+      if (nums.every((n) => n >= 1 && n <= total)) {
+        for (const n of nums) {
+          citadas.add(n);
+          frag.append(el("button", { type: "button", class: "cita", "data-n": n, title: `Ver fragmento ${n}`, textContent: n }));
+        }
+      } else frag.append(todo);
+      ultimo = idx + todo.length;
+      return todo;
+    });
+    frag.append(t.slice(ultimo));
+    nodo.replaceWith(frag);
+  }
+  tpl.content.querySelectorAll("pre").forEach((pre) => {
+    const code = pre.querySelector("code");
+    if (code && window.hljs) {
+      if (!/language-/.test(code.className)) code.classList.add("language-python");
+      try { hljs.highlightElement(code); } catch { /* lenguaje desconocido */ }
+    }
+    const caja = el("div", { class: "bloque-codigo" });
+    pre.replaceWith(caja);
+    caja.append(pre, el("button", { type: "button", class: "copiar", textContent: "Copiar" }));
+  });
+  tpl.content.querySelectorAll("table").forEach((tabla) => {
+    const caja = el("div", { class: "tabla" });
+    tabla.replaceWith(caja);
+    caja.append(tabla);
+  });
+  return { fragmento: tpl.content, citadas };
+}
+
+/* ---------- Render del chat ---------- */
+function renderVacio() {
+  const estante = el("div", { class: "estante" });
+  for (const nombre of libros) {
+    const l = infoLibro(nombre);
+    estante.append(el("span", { class: "lomo", style: `--libro:${l.color}`, title: nombre },
+      el("span", { textContent: l.titulo }), l.autor ? el("small", { textContent: l.autor }) : null));
+  }
+  const sug = el("div", { class: "sugerencias" });
+  for (const s of SUGERENCIAS) {
+    const b = el("button", { type: "button", class: "sugerencia" });
+    b.innerHTML = s;
+    b.dataset.texto = b.textContent;
+    sug.append(b);
+  }
+  return el("section", { class: "vacio" },
+    el("h2", { textContent: "Pregúntale a tus libros de Python" }),
+    el("p", { textContent: "Cada respuesta se arma con fragmentos de los libros indexados. Al lado verás el libro, el autor y la página de donde salió cada uno, con un enlace para abrir el PDF justo ahí." }),
+    libros.length ? el("div", { style: "display:grid;gap:10px" }, el("span", { class: "etiqueta", textContent: `En la biblioteca · ${libros.length} libros` }), estante) : null,
+    el("div", { style: "display:grid;gap:10px" }, el("span", { class: "etiqueta", textContent: "Para empezar" }), sug),
+  );
+}
+
+function renderMensaje(m) {
+  if (m.rol === "usuario") {
+    return el("div", { class: "msg usuario" }, el("div", { class: "burbuja", textContent: m.texto }));
+  }
+  const art = el("article", { class: "msg asistente", "data-id": m.id });
+  const cab = el("div", { class: "msg-cab" },
+    el("span", { class: "quien", textContent: m.modo === "busqueda" ? "Búsqueda" : "Respuesta" }),
+    m.modelo ? el("span", { textContent: m.modelo }) : null,
+    estado.activo === m.id ? el("span", { class: "viendo", textContent: "referencias a la derecha" }) : null,
+  );
+  art.append(cab);
+
+  if (m.error) {
+    art.append(el("div", { class: "aviso-error" },
+      el("p", { textContent: m.error }),
+      el("button", { type: "button", class: "reintentar", "data-id": m.id, textContent: "Reintentar" })));
+    return art;
+  }
+
+  const fuentes = m.fuentes || [];
+  let citadas = new Set();
+  if (m.modo === "busqueda") {
+    art.append(el("p", { class: "prosa", textContent: fuentes.length
+      ? `Encontré ${fuentes.length} fragmentos parecidos a tu pregunta. Ábrelos para leerlos completos.`
+      : "No encontré fragmentos para esta pregunta." }));
+  } else {
+    const { fragmento, citadas: c } = renderMarkdown(m.texto || "_(Gemini no devolvió texto)_", fuentes.length);
+    citadas = c;
+    art.append(el("div", { class: "prosa" }, fragmento));
+  }
+  m.citadas = [...citadas];
+
+  if (fuentes.length) {
+    const fila = el("div", { class: "fuentes" }, el("span", { class: "etiqueta", textContent: "Fuentes" }));
+    fuentes.forEach((f, i) => {
+      const n = i + 1;
+      const l = infoLibro(f.metadata.source);
+      const sinCitar = m.modo !== "busqueda" && !citadas.has(n);
+      fila.append(el("button", {
+        type: "button", class: "ref" + (sinCitar ? " sin-citar" : ""), "data-n": n,
+        style: `--libro:${l.color}`, title: `${l.titulo}${l.autor ? " — " + l.autor : ""}, pág. ${f.metadata.page}`,
+      }, el("span", { class: "ref-n", textContent: n }), el("span", { class: "ref-libro", textContent: l.corto }),
+         el("span", { class: "ref-pag", textContent: `p. ${f.metadata.page}` })));
+    });
+    if (m.modo !== "busqueda") {
+      fila.append(el("span", { class: "nota-fuentes", textContent: citadas.size
+        ? `${citadas.size} de ${fuentes.length} citadas`
+        : "ninguna citada explícitamente" }));
+    }
+    art.append(fila);
+  }
+  return art;
+}
+
+function renderChat({ bajar = true } = {}) {
+  const cont = $("#mensajes");
+  cont.replaceChildren();
+  if (!estado.mensajes.length) cont.append(renderVacio());
+  for (const m of estado.mensajes) cont.append(renderMensaje(m));
+  if (enviando) {
+    cont.append(el("div", { class: "msg asistente", id: "escribiendo" },
+      el("div", { class: "escribiendo" },
+        el("span", { class: "puntos" }, el("i"), el("i"), el("i")),
+        el("span", { textContent: $("#modo").value === "busqueda" ? "Buscando fragmentos…" : "Buscando en los libros y redactando la respuesta…" }))));
+  }
+  if (bajar) $("#scroll").scrollTop = $("#scroll").scrollHeight;
+  actualizarBotonPanel();
+}
+
+/* ---------- Panel de referencias ---------- */
+function mensajeActivo() {
+  return estado.mensajes.find((m) => m.id === estado.activo && m.rol === "asistente" && !m.error);
+}
+
+function renderPanel(resaltar) {
+  const m = mensajeActivo();
+  const cuerpo = $("#panel-cuerpo");
+  cuerpo.replaceChildren();
+  $("#panel-resumen").replaceChildren();
+  $("#panel-pregunta").hidden = !m;
+
+  if (!m || !(m.fuentes || []).length) {
+    cuerpo.append(el("div", { class: "panel-vacio" },
+      el("p", { textContent: m ? "Esta respuesta no tiene fragmentos asociados." : "Aquí aparecen los fragmentos que usó cada respuesta: de qué libro salen, quién lo escribió y en qué página están." }),
+      el("p", { textContent: "Haz clic en una cita como [1] o en una fuente debajo de la respuesta para verla." })));
+    return;
+  }
+
+  $("#panel-pregunta").textContent = `“${m.pregunta}”`;
+  const porLibro = new Map();
+  for (const f of m.fuentes) porLibro.set(f.metadata.source, (porLibro.get(f.metadata.source) || 0) + 1);
+  for (const [source, cuantos] of porLibro) {
+    const l = infoLibro(source);
+    $("#panel-resumen").append(el("span", { class: "lomo", style: `--libro:${l.color}`, title: l.titulo },
+      el("span", { textContent: l.corto }), el("small", { textContent: `× ${cuantos}` })));
+  }
+
+  const citadas = new Set(m.citadas || []);
+  m.fuentes.forEach((f, i) => {
+    const n = i + 1;
+    const l = infoLibro(f.metadata.source);
+    const pct = Math.max(0, Math.min(100, Math.round((f.similitud || 0) * 100)));
+    const esCitada = citadas.has(n);
+    const card = el("article", { class: "frag", id: `frag-${n}`, "data-n": n, style: `--libro:${l.color}` },
+      el("div", { class: "frag-top" },
+        el("span", { class: "ref-n", textContent: n }),
+        m.modo === "busqueda" ? null : el("span", { class: "estado-cita " + (esCitada ? "si" : "no"), textContent: esCitada ? "Citado" : "No citado" }),
+        el("span", { class: "sim", title: "Similitud coseno con tu pregunta" },
+          el("span", { class: "barra" }, el("span", { style: `width:${pct}%` })), `${pct}%`)),
+      el("h3", { textContent: l.titulo }),
+      el("p", { class: "frag-biblio" },
+        l.autor ? el("b", { textContent: l.autor }) : null, l.autor ? " · " : null,
+        `pág. ${f.metadata.page}`,
+        f.metadata.chunk_number != null ? ` · fragmento ${f.metadata.chunk_number}` : null),
+      el("p", { class: "frag-texto", textContent: f.texto }),
+      el("div", { class: "frag-acciones" },
+        el("button", { type: "button", class: "ver-mas", textContent: "Leer completo" }),
+        el("a", { href: urlPdf(f.metadata), target: "_blank", rel: "noopener", textContent: `Abrir PDF en la pág. ${f.metadata.page} ↗` })));
+    cuerpo.append(card);
+  });
+
+  if (resaltar) {
+    const card = $(`#frag-${resaltar}`);
+    if (card) {
+      card.classList.add("resaltado", "abierto");
+      $(".ver-mas", card).textContent = "Leer menos";
+      requestAnimationFrame(() => card.scrollIntoView({ behavior: "smooth", block: "nearest" }));
+      setTimeout(() => card.classList.remove("resaltado"), 1800);
+    }
+  } else cuerpo.scrollTop = 0;
+}
+
+function activar(id, n) {
+  const cambio = estado.activo !== id;
+  estado.activo = id;
+  guardar();
+  if (cambio) renderChat({ bajar: false });
+  renderPanel(n);
+  if (n && window.matchMedia("(max-width: 960px)").matches) abrirPanel();
+}
+
+function abrirPanel() { $("#panel").classList.add("abierto"); $("#velo").hidden = false; }
+function cerrarPanel() { $("#panel").classList.remove("abierto"); $("#velo").hidden = true; }
+function actualizarBotonPanel() {
+  const m = mensajeActivo();
+  const total = m && m.fuentes ? m.fuentes.length : 0;
+  $("#abrir-panel").textContent = total ? `Referencias (${total})` : "Referencias";
+}
+
+/* ---------- API ---------- */
+function construirHistorial() {
+  const turnos = [];
+  for (let i = 0; i < estado.mensajes.length; i++) {
+    const m = estado.mensajes[i];
+    const sig = estado.mensajes[i + 1];
+    if (m.rol === "usuario" && sig && sig.rol === "asistente" && !sig.error && sig.modo === "gemini" && sig.texto) {
+      turnos.push({ rol: "usuario", texto: m.texto.slice(0, 2000) }, { rol: "asistente", texto: sig.texto.slice(0, 6000) });
+    }
+  }
+  return turnos.slice(-MAX_HISTORIAL * 2);
+}
+
+function textoError(datos, status) {
+  const d = datos && datos.detail;
+  if (Array.isArray(d)) return d.map((x) => x.msg).join("; ");
+  if (typeof d === "string") return d;
+  return `La API respondió con el error ${status}.`;
+}
+
+async function enviar(pregunta) {
+  if (enviando || !pregunta) return;
+  const modo = $("#modo").value;
+  const k = Number($("#k").value);
+  const historial = modo === "gemini" ? construirHistorial() : [];
+
+  estado.mensajes.push({ id: nuevoId(), rol: "usuario", texto: pregunta });
+  enviando = true;
+  actualizarEnviar();
+  renderChat();
+
+  const resp = { id: nuevoId(), rol: "asistente", modo, pregunta, k };
+  try {
+    const r = await fetch(modo === "gemini" ? "/api/preguntar" : "/api/buscar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(modo === "gemini" ? { pregunta, k, historial } : { pregunta, k }),
+    });
+    const datos = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(textoError(datos, r.status));
+    resp.texto = datos.respuesta || "";
+    resp.fuentes = datos.fuentes || [];
+    resp.modelo = datos.modelo || "";
+  } catch (e) {
+    resp.error = e instanceof TypeError
+      ? "No hay conexión con la API. Revisa que el servidor esté corriendo (uvicorn api:app --reload)."
+      : e.message || "Ocurrió un error inesperado.";
+  }
+  estado.mensajes.push(resp);
+  enviando = false;
+  if (!resp.error) estado.activo = resp.id;
+  guardar();
+  actualizarEnviar();
+  renderChat();
+  renderPanel();
+}
+
+function actualizarEnviar() {
+  $("#enviar").disabled = enviando || !$("#pregunta").value.trim();
+}
+
+async function cargarEstado() {
+  try {
+    const [rE, rL] = await Promise.all([fetch("/api/estado"), fetch("/api/libros").catch(() => null)]);
+    const e = await rE.json();
+    if (rL && rL.ok) libros = (await rL.json()).libros || [];
+    geminiDisponible = e.gemini_configurado;
+    $("#estado").className = e.gemini_configurado ? "ok" : "mal";
+    $("#estado").textContent = `${e.chunks_indexados.toLocaleString("es")} fragmentos indexados · ` +
+      (e.gemini_configurado ? e.modelo_gemini : "Gemini sin configurar (falta GEMINI_API_KEY)");
+    if (!geminiDisponible) {
+      $("#modo").value = "busqueda";
+      $("#modo").querySelector('[value="gemini"]').disabled = true;
+    }
+  } catch {
+    $("#estado").className = "mal";
+    $("#estado").textContent = "Sin conexión con la API";
+  }
+  if (!estado.mensajes.length) renderChat();
+}
+
+/* ---------- Eventos ---------- */
+$("#formulario").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const pregunta = $("#pregunta").value.trim();
+  if (!pregunta || enviando) return;
+  $("#pregunta").value = "";
+  autoAltura();
+  enviar(pregunta);
+});
+
+function autoAltura() {
+  const t = $("#pregunta");
+  t.style.height = "auto";
+  t.style.height = Math.min(t.scrollHeight, 200) + "px";
+  actualizarEnviar();
+}
+$("#pregunta").addEventListener("input", autoAltura);
+$("#pregunta").addEventListener("keydown", (ev) => {
+  if (ev.key === "Enter" && !ev.shiftKey && !ev.isComposing) {
+    ev.preventDefault();
+    $("#formulario").requestSubmit();
+  }
+});
+
+$("#mensajes").addEventListener("click", async (ev) => {
+  const sug = ev.target.closest(".sugerencia");
+  if (sug) { enviar(sug.dataset.texto); return; }
+
+  const cita = ev.target.closest(".cita, .ref");
+  if (cita) {
+    const art = cita.closest(".msg.asistente");
+    activar(art.dataset.id, Number(cita.dataset.n));
+    return;
+  }
+
+  const reintentar = ev.target.closest(".reintentar");
+  if (reintentar) {
+    const i = estado.mensajes.findIndex((m) => m.id === reintentar.dataset.id);
+    if (i < 0) return;
+    const fallido = estado.mensajes[i];
+    // Quita la pregunta y el error para volver a enviarla con el mismo modo.
+    const inicio = i > 0 && estado.mensajes[i - 1].rol === "usuario" ? i - 1 : i;
+    estado.mensajes.splice(inicio, i - inicio + 1);
+    if (geminiDisponible || fallido.modo === "busqueda") $("#modo").value = fallido.modo;
+    enviar(fallido.pregunta);
+    return;
+  }
+
+  const copiar = ev.target.closest(".copiar");
+  if (copiar) {
+    const codigo = copiar.parentElement.querySelector("code, pre").innerText;
+    try { await navigator.clipboard.writeText(codigo); copiar.textContent = "Copiado"; }
+    catch { copiar.textContent = "No se pudo copiar"; }
+    setTimeout(() => (copiar.textContent = "Copiar"), 1500);
+    return;
+  }
+
+  // Clic en cualquier otra parte de una respuesta: mostrar sus referencias.
+  const art = ev.target.closest(".msg.asistente[data-id]");
+  if (art && !ev.target.closest("a") && estado.activo !== art.dataset.id) activar(art.dataset.id);
+});
+
+$("#panel-cuerpo").addEventListener("click", (ev) => {
+  const b = ev.target.closest(".ver-mas");
+  if (!b) return;
+  const card = b.closest(".frag");
+  card.classList.toggle("abierto");
+  b.textContent = card.classList.contains("abierto") ? "Leer menos" : "Leer completo";
+});
+
+$("#nueva").addEventListener("click", () => {
+  if (enviando) return;
+  estado = { mensajes: [], activo: null };
+  guardar();
+  renderChat();
+  renderPanel();
+  $("#pregunta").focus();
+});
+$("#abrir-panel").addEventListener("click", abrirPanel);
+$("#cerrar-panel").addEventListener("click", cerrarPanel);
+$("#velo").addEventListener("click", cerrarPanel);
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") cerrarPanel(); });
+
+/* ---------- Inicio ---------- */
+cargarGuardado();
+renderChat();
+renderPanel();
+actualizarEnviar();
+cargarEstado();
+</script>
+</body>
+</html>
